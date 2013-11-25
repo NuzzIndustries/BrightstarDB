@@ -274,9 +274,20 @@ namespace BrightstarDB.EntityFramework
         /// </summary>
         public void Load()
         {
+            List<string> typeIds = _parent.Context.Mappings.MapTypeToUris(typeof(T)).ToList();
             var dataObjects = _isInverse
                                   ? _parent.DataObject.GetInverseOf(_propertyType)
                                   : _parent.DataObject.GetPropertyValues(_propertyType).OfType<IDataObject>();
+
+            //Filter to ensure that type matches the given type
+            dataObjects = dataObjects.Where(o =>
+                o
+                .GetPropertyValues(DataObject.TypeDataObject.Identity)
+                .Cast<DataObject>()
+                .Select(x => x.Identity)
+                .Intersect(typeIds)
+                .Count() == typeIds.Count);
+
             SetLoadedObjects(dataObjects.Select(_context.Bind<T>).Cast<BrightstarEntityObject>());
         }
 
